@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module type="PYTHON_MODULE" version="4">
+  <component name="NewModuleRootManager">
+    <content url="file://$MODULE_DIR$" />
+    <orderEntry type="jdk" jdkName="Remote Python 2.7.12 (sftp://longc@166.111.139.115:22/home/longc/anaconda2/bin/python)" jdkType="Python SDK" />
+    <orderEntry type="sourceFolder" forTests="false" />
+  </component>
+  <component name="TestRunnerService">
+    <option name="projectConfiguration" value="Nosetests" />
+    <option name="PROJECT_TEST_RUNNER" value="Nosetests" />
+  </component>
+</module>
