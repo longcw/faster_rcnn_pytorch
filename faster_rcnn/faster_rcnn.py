@@ -1,19 +1,19 @@
+import cv2
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
-import numpy as np
-import cv2
-from utils.timer import Timer
 
+from utils.timer import Timer
 from fast_rcnn.nms_wrapper import nms
-from fast_rcnn.bbox_transform import bbox_transform_inv, clip_boxes
 from rpn_msr.proposal_layer import proposal_layer as proposal_layer_py
+from fast_rcnn.bbox_transform import bbox_transform_inv, clip_boxes
 
 import network
 from network import Conv2d, FC
-from vgg16 import VGG16
 from roi_pool import RoIPool
+from vgg16 import VGG16
 
 
 def nms_detections(pred_boxes, scores, nms_thresh, inds=None):

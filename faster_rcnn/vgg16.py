@@ -1,13 +1,11 @@
+import cv2
+import numpy as np
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
-import cv2
-import numpy as np
-
-from network import Conv2d
 
 from utils.blob import im_list_to_blob
-
+from network import Conv2d
 
 PIXEL_MEANS = np.array([[[102.9801, 115.9465, 122.7717]]])
 SCALES = (600,)

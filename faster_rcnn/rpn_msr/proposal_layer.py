@@ -6,15 +6,11 @@
 # --------------------------------------------------------
 
 import numpy as np
-# import yaml
+from ..fast_rcnn.config import cfg
+from ..fast_rcnn.nms_wrapper import nms
 
+from faster_rcnn.fast_rcnn.bbox_transform import bbox_transform_inv, clip_boxes
 from generate_anchors import generate_anchors
-
-# TODO: make fast_rcnn irrelevant
-# >>>> obsolete, because it depends on sth outside of this project
-from fast_rcnn.config import cfg
-from fast_rcnn.bbox_transform import bbox_transform_inv, clip_boxes
-from fast_rcnn.nms_wrapper import nms
 
 # <<<< obsolete
 
