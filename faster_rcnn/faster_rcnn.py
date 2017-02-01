@@ -12,7 +12,8 @@ from fast_rcnn.bbox_transform import bbox_transform_inv, clip_boxes
 
 import network
 from network import Conv2d, FC
-from roi_pool import RoIPool
+# from roi_pool import RoIPool
+from roi_pooling.modules.roi_pool import RoIPool
 from vgg16 import VGG16
 
 
