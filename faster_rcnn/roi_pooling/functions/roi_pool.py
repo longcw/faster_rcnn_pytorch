@@ -10,6 +10,8 @@ class RoIPoolFunction(Function):
         self.spatial_scale = float(spatial_scale)
         self.output = None
         self.argmax = None
+        self.rois = None
+        self.feature_size = None
 
     def forward(self, features, rois):
         batch_size, num_channels, data_height, data_width = features.size()
@@ -29,15 +31,22 @@ class RoIPoolFunction(Function):
                                                  features, rois, output, argmax)
             self.output = output
             self.argmax = argmax
+            self.rois = rois
+            self.feature_size = features.size()
 
         return output
 
     def backward(self, grad_output):
         # TODO: roi_pooling backward
-        # grad_input = grad_output.new()
-        # if not grad_output.is_cuda:
-        #     my_lib.my_lib_add_backward(grad_output, grad_input)
-        # else:
-        #     my_lib.my_lib_add_backward_cuda(grad_output, grad_input)
-        # return grad_input
-        return None
+
+        assert(self.feature_size is not None and grad_output.is_cuda)
+
+        batch_size, num_channels, data_height, data_width = self.feature_size
+
+        grad_input = torch.zeros(batch_size, num_channels, data_height, data_width).cuda()
+        roi_pooling.roi_pooling_backward_cuda(self.pooled_height, self.pooled_width, self.spatial_scale,
+                                              grad_output, self.rois, grad_input, self.argmax)
+
+        # print grad_input
+
+        return grad_input, None
