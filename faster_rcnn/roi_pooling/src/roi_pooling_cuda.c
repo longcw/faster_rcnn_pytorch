@@ -29,11 +29,11 @@ int roi_pooling_forward_cuda(int pooled_height, int pooled_width, float spatial_
         return 0;
     }
     // data height
-    int data_height = THCudaTensor_size(state, features, 1);
+    int data_height = THCudaTensor_size(state, features, 2);
     // data width
-    int data_width = THCudaTensor_size(state, features, 2);
+    int data_width = THCudaTensor_size(state, features, 3);
     // Number of channels
-    int num_channels = THCudaTensor_size(state, features, 3);
+    int num_channels = THCudaTensor_size(state, features, 1);
 
     ROIPoolForwardLaucher(
         data_flat, spatial_scale, num_rois, data_height,

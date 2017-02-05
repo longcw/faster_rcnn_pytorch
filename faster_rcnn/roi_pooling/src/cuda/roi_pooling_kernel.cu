@@ -1,6 +1,3 @@
-#if GOOGLE_CUDA
-
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -71,17 +68,18 @@ __global__ void ROIPoolForward(const int nthreads, const float* bottom_data,
     int maxidx = -1;
     bottom_data += roi_batch_ind * channels * height * width;
     for (int h = hstart; h < hend; ++h) {
-      for (int w = wstart; w < wend; ++w) {
-        int bottom_index = (h * width + w) * channels + c;
-        if (bottom_data[bottom_index] > maxval) {
-          maxval = bottom_data[bottom_index];
-          maxidx = bottom_index;
+        for (int w = wstart; w < wend; ++w) {
+//            int bottom_index = (h * width + w) * channels + c;
+            int bottom_index = (c * height + h) * width + w;
+            if (bottom_data[bottom_index] > maxval) {
+                maxval = bottom_data[bottom_index];
+                maxidx = bottom_index;
+            }
         }
-      }
     }
     top_data[index] = maxval;
     if (argmax_data != NULL)
-      argmax_data[index] = maxidx;
+        argmax_data[index] = maxidx;
   }
 }
 
@@ -97,8 +95,7 @@ int ROIPoolForwardLaucher(
   const int output_size = num_rois * pooled_height * pooled_width * channels;
   cudaError_t err;
 
-  ROIPoolForward<<<(output_size + kThreadsPerBlock - 1) / kThreadsPerBlock,
-                       kThreadsPerBlock>>>(
+  ROIPoolForward<<<(output_size + kThreadsPerBlock - 1) / kThreadsPerBlock, kThreadsPerBlock>>>(
       output_size, bottom_data, spatial_scale, height, width, channels, pooled_height,
       pooled_width, bottom_rois, top_data, argmax_data);
 
@@ -221,7 +218,4 @@ int ROIPoolForwardLaucher(
 }
 #endif
 
-
-
-#endif  // GOOGLE_CUDA
 

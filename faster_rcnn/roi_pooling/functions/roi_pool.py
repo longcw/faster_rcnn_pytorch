@@ -8,30 +8,28 @@ class RoIPoolFunction(Function):
         self.pooled_width = int(pooled_width)
         self.pooled_height = int(pooled_height)
         self.spatial_scale = float(spatial_scale)
+        self.output = None
+        self.argmax = None
 
     def forward(self, features, rois):
         batch_size, num_channels, data_height, data_width = features.size()
         num_rois = rois.size()[0]
         output = torch.zeros(num_rois, num_channels, self.pooled_height, self.pooled_width)
         argmax = torch.IntTensor(num_rois, num_channels, self.pooled_height, self.pooled_width).zero_()
-        # output, argmax = output.permute(0, 2, 3, 1), argmax.permute(0, 2, 3, 1)
-        _features = features.permute(0, 2, 3, 1)
 
         if not features.is_cuda:
+            _features = features.permute(0, 2, 3, 1)
             roi_pooling.roi_pooling_forward(self.pooled_height, self.pooled_width, self.spatial_scale,
-                                            _features.cpu(), rois.cpu(), output.cpu())
+                                            _features, rois, output)
             output = output.cuda()
         else:
-            # TODO: cuda
-            print('cuda:')
             output = output.cuda()
             argmax = argmax.cuda()
             roi_pooling.roi_pooling_forward_cuda(self.pooled_height, self.pooled_width, self.spatial_scale,
-                                                _features, rois, output, argmax)
+                                                 features, rois, output, argmax)
+            self.output = output
+            self.argmax = argmax
 
-            print argmax.cpu().numpy()[0, 25]
-            # print output
-            # output = output.permute(0, 3, 1, 2)
         return output
 
     def backward(self, grad_output):

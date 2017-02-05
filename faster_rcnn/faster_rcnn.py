@@ -120,11 +120,6 @@ class FasterRCNN(nn.Module):
         roi_pooling_t = t.toc()
         print('roi pooling spend: {}s'.format(roi_pooling_t))
 
-        print torch.max(pooled_features)
-        print torch.min(pooled_features)
-        print pooled_features.size()
-        print torch.max(pooled_features, 1)[0][0]
-
         x = pooled_features.view(pooled_features.size()[0], -1)
         x = self.fc6(x)
         x = self.fc7(x)

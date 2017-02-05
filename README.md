@@ -13,7 +13,7 @@ by Shaoqing Ren, Kaiming He, Ross Girshick, Jian Sun.
 - [x] forward pass for detecting
 - [x] using models trained by Tensorflow
 - [x] roi pooling layer implemented by python and pytorch
-- [ ] roi pooling layer with C extensions for pytorch
+- [x] roi pooling layer with C extensions for pytorch
 - [ ] backward pass for training
 
 ### Installation and demo
