@@ -6,6 +6,8 @@
 # --------------------------------------------------------
 
 import numpy as np
+from sympy.physics.paulialgebra import delta
+
 
 def bbox_transform(ex_rois, gt_rois):
     ex_widths = ex_rois[:, 2] - ex_rois[:, 0] + 1.0

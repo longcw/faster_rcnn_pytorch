@@ -96,46 +96,6 @@ int roi_pooling_forward(int pooled_height, int pooled_width, float spatial_scale
             }
         }
 
-
-//      int ph;
-//      for (ph = 0; ph < pooled_height; ++ph)
-//      {
-//        int pw;
-//        for (pw = 0; pw < pooled_width; ++pw)
-//        {
-//          // Compute pooling region for this output unit:
-//          //  start (included) = floor(ph * roi_height / pooled_height_)
-//          //  end (excluded) = ceil((ph + 1) * roi_height / pooled_height_)
-//
-//
-//          const int pool_index = index_output + (ph * pooled_width + pw) * num_channels;
-//          if (is_empty)
-//          {
-//            int c;
-//            for (c = 0; c < num_channels; ++c)
-//            {
-//              output_flat[pool_index + c] = 0;
-//            }
-//          }
-//
-//          int h, w, c;
-//          for (h = hstart; h < hend; ++h)
-//          {
-//            for (w = wstart; w < wend; ++w)
-//            {
-//              for (c = 0; c < num_channels; ++c)
-//              {
-//                const int index = (h * data_width + w) * num_channels + c;
-////                const int index = c * (data_width * data_height) + (h * data_width + w);
-//                if (data_flat[index_data + index] > output_flat[pool_index + c])
-//                {
-//                  output_flat[pool_index + c] = data_flat[index_data + index];
-//                }
-//              }
-//            }
-//          }
-//        }
-//      }
         // Increment ROI index
         index_roi += size_rois;
         index_output += pooled_height * pooled_width * num_channels;

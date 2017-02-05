@@ -60,6 +60,9 @@ try:
 except AttributeError:
     numpy_include = np.get_numpy_include()
 
+th_include = '/home/longc/anaconda2/lib/python2.7/site-packages/torch/utils/ffi/../../lib/include/TH'
+thc_include = '/home/longc/anaconda2/lib/python2.7/site-packages/torch/utils/ffi/../../lib/include/THC'
+
 def customize_compiler_for_nvcc(self):
     """inject deep into distutils to customize how the dispatch
     to gcc/nvcc works.

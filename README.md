@@ -22,10 +22,10 @@ by Shaoqing Ren, Kaiming He, Ross Girshick, Jian Sun.
     git clone git@github.com:longcw/faster_rcnn_pytorch.git
     ```
 
-2. Build the Cython modules for nms
+2. Build the Cython modules for nms and the roi_pooling layer
     ```bash
     cd faster_rcnn_pytorch/faster_rcnn
-    make
+    ./make.sh
     ```
 3. Download the trained model [VGGnet_fast_rcnn_iter_70000.h5](https://drive.google.com/open?id=0B4pXCfnYmG1WOXdpYVFybWxiZFE) 
 and set the model path in `demo.py`
