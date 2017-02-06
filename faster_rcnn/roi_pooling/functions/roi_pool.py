@@ -23,7 +23,7 @@ class RoIPoolFunction(Function):
             _features = features.permute(0, 2, 3, 1)
             roi_pooling.roi_pooling_forward(self.pooled_height, self.pooled_width, self.spatial_scale,
                                             _features, rois, output)
-            output = output.cuda()
+            # output = output.cuda()
         else:
             output = output.cuda()
             argmax = argmax.cuda()

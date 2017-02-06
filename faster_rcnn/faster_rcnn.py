@@ -12,7 +12,7 @@ from fast_rcnn.bbox_transform import bbox_transform_inv, clip_boxes
 
 import network
 from network import Conv2d, FC
-# from roi_pool import RoIPool
+# from roi_pooling.modules.roi_pool_py import RoIPool
 from roi_pooling.modules.roi_pool import RoIPool
 from vgg16 import VGG16
 
@@ -114,17 +114,7 @@ class FasterRCNN(nn.Module):
 
     def forward(self, image):
         features, rois, im_info = self.rpn(image)
-        t = Timer()
-        t.tic()
         pooled_features = self.roi_pool(features, rois)
-        roi_pooling_t = t.toc()
-        print('roi pooling spend: {}s'.format(roi_pooling_t))
-
-        # loss = pooled_features.mean()
-        # print loss
-        # loss.backward()
-        # print torch.max(features.grad)
-        # print features.grad.size()
 
         x = pooled_features.view(pooled_features.size()[0], -1)
         x = self.fc6(x)
@@ -184,34 +174,3 @@ class FasterRCNN(nn.Module):
             self.interpret_faster_rcnn(cls_prob, bbox_pred, rois, im_info, image.shape, min_score=thr)
         return pred_boxes, scores, classes
 
-if __name__ == '__main__':
-    def main():
-        import os
-        im_file = 'demo/004545.jpg'
-        image = cv2.imread(im_file)
-
-        detector = FasterRCNN()
-        network.load_net('/media/longc/Data/models/VGGnet_fast_rcnn_iter_70000.h5', detector)
-        detector.cuda()
-        print('load model successfully!')
-
-        # network.save_net(r'/media/longc/Data/models/VGGnet_fast_rcnn_iter_70000.h5', detector)
-        # print('save model succ')
-
-        t = Timer()
-        t.tic()
-        dets, scores, classes = detector.detect(image, 0.3)
-        runtime = t.toc()
-        print('total spend: {}s'.format(runtime))
-
-        im2show = np.copy(image)
-        for i, det in enumerate(dets):
-            if scores[i] < 0.3:
-                continue
-            det = tuple(int(x) for x in det)
-            cv2.rectangle(im2show, det[0:2], det[2:4], (255, 205, 51), 2)
-            cv2.putText(im2show, '%s: %.3f' % (classes[i], scores[i]), (det[0], det[1] + 15), cv2.FONT_HERSHEY_PLAIN,
-                        1.0, (0, 0, 255), thickness=1)
-        cv2.imwrite(os.path.join('demo', 'out.jpg'), im2show)
-
-    main()
