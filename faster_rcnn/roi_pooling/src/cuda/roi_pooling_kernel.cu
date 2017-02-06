@@ -75,18 +75,18 @@ __global__ void ROIPoolForward(const int nthreads, const float* bottom_data,
 }
 
 
-
 int ROIPoolForwardLaucher(
     const float* bottom_data, const float spatial_scale, const int num_rois, const int height,
     const int width, const int channels, const int pooled_height,
     const int pooled_width, const float* bottom_rois,
-    float* top_data, int* argmax_data)
+    float* top_data, int* argmax_data, cudaStream_t stream)
 {
     const int kThreadsPerBlock = 1024;
     const int output_size = num_rois * pooled_height * pooled_width * channels;
     cudaError_t err;
 
-    ROIPoolForward<<<(output_size + kThreadsPerBlock - 1) / kThreadsPerBlock, kThreadsPerBlock>>>(
+
+    ROIPoolForward<<<(output_size + kThreadsPerBlock - 1) / kThreadsPerBlock, kThreadsPerBlock, 0, stream>>>(
       output_size, bottom_data, spatial_scale, height, width, channels, pooled_height,
       pooled_width, bottom_rois, top_data, argmax_data);
 
@@ -181,13 +181,13 @@ __global__ void ROIPoolBackward(const int nthreads, const float* top_diff,
 int ROIPoolBackwardLaucher(const float* top_diff, const float spatial_scale, const int batch_size, const int num_rois,
     const int height, const int width, const int channels, const int pooled_height,
     const int pooled_width, const float* bottom_rois,
-    float* bottom_diff, const int* argmax_data)
+    float* bottom_diff, const int* argmax_data, cudaStream_t stream)
 {
     const int kThreadsPerBlock = 1024;
     const int output_size = batch_size * height * width * channels;
     cudaError_t err;
 
-    ROIPoolBackward<<<(output_size + kThreadsPerBlock - 1) / kThreadsPerBlock, kThreadsPerBlock>>>(
+    ROIPoolBackward<<<(output_size + kThreadsPerBlock - 1) / kThreadsPerBlock, kThreadsPerBlock, 0, stream>>>(
       output_size, top_diff, argmax_data, num_rois, spatial_scale, height, width, channels, pooled_height,
       pooled_width, bottom_diff, bottom_rois);
 

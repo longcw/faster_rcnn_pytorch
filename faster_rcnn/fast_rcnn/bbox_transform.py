@@ -29,9 +29,10 @@ def bbox_transform(ex_rois, gt_rois):
         (targets_dx, targets_dy, targets_dw, targets_dh)).transpose()
     return targets
 
+
 def bbox_transform_inv(boxes, deltas):
     if boxes.shape[0] == 0:
-        return np.zeros((0, deltas.shape[1]), dtype=deltas.dtype)
+        return np.zeros((0,), dtype=deltas.dtype)
 
     boxes = boxes.astype(deltas.dtype, copy=False)
 
@@ -62,10 +63,13 @@ def bbox_transform_inv(boxes, deltas):
 
     return pred_boxes
 
+
 def clip_boxes(boxes, im_shape):
     """
     Clip boxes to image boundaries.
     """
+    if boxes.shape[0] == 0:
+        return boxes
 
     # x1 >= 0
     boxes[:, 0::4] = np.maximum(np.minimum(boxes[:, 0::4], im_shape[1] - 1), 0)

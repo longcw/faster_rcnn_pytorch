@@ -173,7 +173,7 @@ class FasterRCNN(nn.Module):
             pred_boxes = clip_boxes(pred_boxes, im_shape)
 
         # nms
-        if nms:
+        if nms and pred_boxes.shape[0] > 0:
             pred_boxes, scores, inds = nms_detections(pred_boxes, scores, 0.3, inds=inds)
 
         return pred_boxes, scores, self.classes[inds]
@@ -197,7 +197,6 @@ if __name__ == '__main__':
 
         # network.save_net(r'/media/longc/Data/models/VGGnet_fast_rcnn_iter_70000.h5', detector)
         # print('save model succ')
-
 
         t = Timer()
         t.tic()

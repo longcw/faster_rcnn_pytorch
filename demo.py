@@ -20,6 +20,7 @@ def test():
 
     t = Timer()
     t.tic()
+    # image = np.zeros(shape=[600, 800, 3], dtype=np.uint8) + 255
     dets, scores, classes = detector.detect(image, 0.3)
     runtime = t.toc()
     print('total spend: {}s'.format(runtime))
