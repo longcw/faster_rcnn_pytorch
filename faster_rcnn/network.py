@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from torch.autograd import Variable
 import numpy as np
 
 
@@ -46,3 +47,10 @@ def load_net(fname, net):
     for k, v in net.state_dict().items():
         param = torch.from_numpy(np.asarray(h5f[k]))
         v.copy_(param)
+
+
+def np_to_variable(x, is_cuda=True):
+    v = Variable(torch.from_numpy(x))
+    if is_cuda:
+        v = v.cuda()
+    return v

@@ -13,6 +13,7 @@ def test():
     detector = FasterRCNN()
     network.load_net('/media/longc/Data/models/VGGnet_fast_rcnn_iter_70000.h5', detector)
     detector.cuda()
+    detector.eval()
     print('load model successfully!')
 
     # network.save_net(r'/media/longc/Data/models/VGGnet_fast_rcnn_iter_70000.h5', detector)
