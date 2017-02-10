@@ -19,7 +19,7 @@ Most tools in $ROOT/tools take a --cfg option to specify an override file.
 import os
 import os.path as osp
 import numpy as np
-# `pip install easydict` if you don't have it
+from time import strftime, localtime
 from easydict import EasyDict as edict
 
 __C = edict()
@@ -33,6 +33,8 @@ cfg = __C
 
 # region proposal network (RPN) or not
 __C.IS_RPN = True
+__C.ANCHOR_SCALES = [8, 16, 32]
+__C.NCLASSES = 21
 
 # multiscale training and testing
 __C.IS_MULTISCALE = False
@@ -44,26 +46,29 @@ __C.NET_NAME = 'VGGnet'
 __C.SUBCLS_NAME = 'voxel_exemplars'
 
 __C.TRAIN = edict()
-#__C.NET_NAME = 'VGGnet'
+# Adam, Momentum, RMS
+__C.TRAIN.SOLVER = 'Momentum'
 # learning rate
+__C.TRAIN.WEIGHT_DECAY = 0.0005
 __C.TRAIN.LEARNING_RATE = 0.001
 __C.TRAIN.MOMENTUM = 0.9
 __C.TRAIN.GAMMA = 0.1
 __C.TRAIN.STEPSIZE = 50000
 __C.TRAIN.DISPLAY = 10
+__C.TRAIN.LOG_IMAGE_ITERS = 100
+__C.TRAIN.OHEM = False
 
 # Scales to compute real features
 __C.TRAIN.SCALES_BASE = (0.25, 0.5, 1.0, 2.0, 3.0)
 # __C.TRAIN.SCALES_BASE = (1.0,)
 
 # parameters for ROI generating
-#__C.TRAIN.SPATIAL_SCALE = 0.0625
+# __C.TRAIN.SPATIAL_SCALE = 0.0625
 __C.TRAIN.KERNEL_SIZE = 5
 
 # Aspect ratio to use during training
 # __C.TRAIN.ASPECTS = (1, 0.75, 0.5, 0.25)
-__C.TRAIN.ASPECTS= (1,)
-
+__C.TRAIN.ASPECTS = (1,)
 
 # Scales to use during training (can list multiple scales)
 # Each scale is the pixel size of an image's shortest side
@@ -114,12 +119,15 @@ __C.TRAIN.USE_PREFETCH = False
 # Normalize the targets (subtract empirical mean, divide by empirical stddev)
 __C.TRAIN.BBOX_NORMALIZE_TARGETS = True
 # Deprecated (inside weights)
+# used for assigning weights for each coords (x1, y1, w, h)
 __C.TRAIN.BBOX_INSIDE_WEIGHTS = (1.0, 1.0, 1.0, 1.0)
 # Normalize the targets using "precomputed" (or made up) means and stdevs
 # (BBOX_NORMALIZE_TARGETS must also be True)
-__C.TRAIN.BBOX_NORMALIZE_TARGETS_PRECOMPUTED = False
+__C.TRAIN.BBOX_NORMALIZE_TARGETS_PRECOMPUTED = True
 __C.TRAIN.BBOX_NORMALIZE_MEANS = (0.0, 0.0, 0.0, 0.0)
 __C.TRAIN.BBOX_NORMALIZE_STDS = (0.1, 0.1, 0.2, 0.2)
+# faster rcnn dont use pre-generated rois by selective search
+# __C.TRAIN.BBOX_NORMALIZE_STDS = (1, 1, 1, 1)
 
 # Train using these proposals
 __C.TRAIN.PROPOSAL_METHOD = 'selective_search'
@@ -128,9 +136,11 @@ __C.TRAIN.PROPOSAL_METHOD = 'selective_search'
 # tall and thin or both short and wide) in order to avoid wasting computation
 # on zero-padding.
 __C.TRAIN.ASPECT_GROUPING = True
-
+# preclude rois intersected with dontcare areas above the value
+__C.TRAIN.DONTCARE_AREA_INTERSECTION_HI = 0.5
+__C.TRAIN.PRECLUDE_HARD_SAMPLES = True
 # Use RPN to detect objects
-__C.TRAIN.HAS_RPN = False
+__C.TRAIN.HAS_RPN = True
 # IOU >= thresh: positive example
 __C.TRAIN.RPN_POSITIVE_OVERLAP = 0.7
 # IOU < thresh: negative example
@@ -155,6 +165,7 @@ __C.TRAIN.RPN_BBOX_INSIDE_WEIGHTS = (1.0, 1.0, 1.0, 1.0)
 # and give negatives a weight of (1 - p)
 # Set to -1.0 to use uniform example weighting
 __C.TRAIN.RPN_POSITIVE_WEIGHT = -1.0
+# __C.TRAIN.RPN_POSITIVE_WEIGHT = 0.5
 
 
 #
@@ -191,13 +202,12 @@ __C.TEST.PROPOSAL_METHOD = 'selective_search'
 __C.TEST.RPN_NMS_THRESH = 0.7
 ## Number of top scoring boxes to keep before apply NMS to RPN proposals
 __C.TEST.RPN_PRE_NMS_TOP_N = 6000
-#__C.TEST.RPN_PRE_NMS_TOP_N = 12000
+# __C.TEST.RPN_PRE_NMS_TOP_N = 12000
 ## Number of top scoring boxes to keep after applying NMS to RPN proposals
 __C.TEST.RPN_POST_NMS_TOP_N = 300
-#__C.TEST.RPN_POST_NMS_TOP_N = 2000
+# __C.TEST.RPN_POST_NMS_TOP_N = 2000
 # Proposal height and width both need to be greater than RPN_MIN_SIZE (at orig image scale)
 __C.TEST.RPN_MIN_SIZE = 16
-
 
 #
 # MISC
@@ -208,7 +218,7 @@ __C.TEST.RPN_MIN_SIZE = 16
 # coordinates. If DEDUP_BOXES > 0, then DEDUP_BOXES is used as the scale factor
 # for identifying duplicate boxes.
 # 1/16 is correct for {Alex,Caffe}Net, VGG_CNN_M_1024, and VGG16
-__C.DEDUP_BOXES = 1./16.
+__C.DEDUP_BOXES = 1. / 16.
 
 # Pixel mean values (BGR order) as a (1, 1, 3) array
 # We use the same pixel mean for all networks even though it's not exactly what
@@ -235,12 +245,14 @@ __C.MATLAB = 'matlab'
 
 # Place outputs under an experiments directory
 __C.EXP_DIR = 'default'
+__C.LOG_DIR = 'default'
 
 # Use GPU implementation of non-maximum suppression
 __C.USE_GPU_NMS = True
 
 # Default GPU device id
 __C.GPU_ID = 0
+
 
 def get_output_dir(imdb, weights_filename):
     """Return the directory where experimental artifacts are placed.
@@ -255,6 +267,20 @@ def get_output_dir(imdb, weights_filename):
     if not os.path.exists(outdir):
         os.makedirs(outdir)
     return outdir
+
+
+def get_log_dir(imdb):
+    """Return the directory where experimental artifacts are placed.
+    If the directory does not exist, it is created.
+    A canonical path is built using the name from an imdb and a network
+    (if not None).
+    """
+    log_dir = osp.abspath( \
+        osp.join(__C.ROOT_DIR, 'logs', __C.LOG_DIR, imdb.name, strftime("%Y-%m-%d-%H-%M-%S", localtime())))
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
+    return log_dir
+
 
 def _merge_a_into_b(a, b):
     """Merge config dictionary a into config dictionary b, clobbering the
@@ -275,8 +301,8 @@ def _merge_a_into_b(a, b):
                 v = np.array(v, dtype=b[k].dtype)
             else:
                 raise ValueError(('Type mismatch ({} vs. {}) '
-                                'for config key: {}').format(type(b[k]),
-                                                            type(v), k))
+                                  'for config key: {}').format(type(b[k]),
+                                                               type(v), k))
 
         # recursively merge dicts
         if type(v) is edict:
@@ -288,6 +314,7 @@ def _merge_a_into_b(a, b):
         else:
             b[k] = v
 
+
 def cfg_from_file(filename):
     """Load a config file and merge it into the default options."""
     import yaml
@@ -295,6 +322,7 @@ def cfg_from_file(filename):
         yaml_cfg = edict(yaml.load(f))
 
     _merge_a_into_b(yaml_cfg, __C)
+
 
 def cfg_from_list(cfg_list):
     """Set config keys via list (e.g., from command line)."""
@@ -315,5 +343,5 @@ def cfg_from_list(cfg_list):
             value = v
         assert type(value) == type(d[subkey]), \
             'type {} does not match original type {}'.format(
-            type(value), type(d[subkey]))
+                type(value), type(d[subkey]))
         d[subkey] = value

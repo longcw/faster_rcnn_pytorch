@@ -6,6 +6,7 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 
 from utils.timer import Timer
+from utils.blob import im_list_to_blob
 from fast_rcnn.nms_wrapper import nms
 from rpn_msr.proposal_layer import proposal_layer as proposal_layer_py
 from rpn_msr.anchor_target_layer import anchor_target_layer as anchor_target_layer_py
@@ -44,8 +45,10 @@ class RPN(nn.Module):
         self.cross_entropy = None
         self.loss_box = None
 
-    def forward(self, image, gt_boxes=None, dontcare_areas=None):
-        features, im_info = self.features(image)
+    def forward(self, im_data, im_info, gt_boxes=None, dontcare_areas=None):
+        im_data = network.np_to_variable(im_data, is_cuda=True)
+        im_data = im_data.permute(0, 3, 1, 2)
+        features = self.features(im_data)
 
         rpn_conv1 = self.conv1(features)
 
@@ -70,28 +73,31 @@ class RPN(nn.Module):
             self.cross_entropy, self.loss_box = \
                 self.build_loss(rpn_cls_score_reshape, rpn_bbox_pred, rpn_data)
 
-        return features, rois, im_info
+        return features, rois
 
     @staticmethod
     def build_loss(rpn_cls_score_reshape, rpn_bbox_pred, rpn_data):
         # classification loss
-        rpn_cls_score = rpn_cls_score_reshape.permute(0, 2, 3, 1).view(-1, 2)
-        rpn_label = rpn_data[0].view(-1)
-        rpn_keep = rpn_label.ne(-1).nonzero().squeeze()
+        rpn_cls_score = rpn_cls_score_reshape.permute(0, 2, 3, 1).contiguous().view(-1, 2)
+        rpn_label = rpn_data[0]
+
+        # print rpn_label.size(), rpn_cls_score.size()
+
+        rpn_keep = Variable(rpn_label.data.ne(-1).nonzero().squeeze()).cuda()
         rpn_cls_score = torch.index_select(rpn_cls_score, 0, rpn_keep)
         rpn_label = torch.index_select(rpn_label, 0, rpn_keep)
+
         rpn_cross_entropy = F.cross_entropy(rpn_cls_score, rpn_label)
+        # print rpn_cross_entropy
 
         # box loss
-        fg_keep = rpn_label.eq(1).nonzero().squeeze()
-        rpn_bbox_targets = rpn_data[1]
-        rpn_bbox_targets = torch.index_select(rpn_bbox_targets, 0, fg_keep)
-        # rpn_bbox_inside_weights = torch.index_select(rpn_bbox_inside_weights, 0, fg_keep)
-        # rpn_bbox_outside_weights = torch.index_select(rpn_bbox_outside_weights, 0, fg_keep)
+        rpn_bbox_targets, rpn_bbox_inside_weights, rpn_bbox_outside_weights = rpn_data[1:]
+        rpn_bbox_targets = torch.mul(rpn_bbox_targets, rpn_bbox_inside_weights)
+        rpn_bbox_pred = torch.mul(rpn_bbox_pred, rpn_bbox_inside_weights)
 
-        rpn_bbox_pred = rpn_bbox_pred.permute(0, 2, 3, 1).view(-1, 4)   # shape (HxWxA, 4)
-        rpn_bbox_pred = torch.index_select(rpn_bbox_pred, 0, fg_keep)
-        rpn_loss_box = F.smooth_l1_loss(rpn_bbox_pred, rpn_bbox_targets)
+        rpn_loss_box = F.smooth_l1_loss(rpn_bbox_pred, rpn_bbox_targets,
+                                        size_average=False) / torch.sum(rpn_bbox_inside_weights.data)
+        # print rpn_loss_box
 
         return rpn_cross_entropy, rpn_loss_box
 
@@ -130,18 +136,18 @@ class RPN(nn.Module):
         ----------
         Returns
         ----------
-        rpn_labels : (HxWxA, 1), for each anchor, 0 denotes bg, 1 fg, -1 dontcare
-        rpn_bbox_targets: (HxWxA, 4), distances of the anchors to the gt_boxes(may contains some transform)
+        rpn_labels : (1, 1, HxA, W), for each anchor, 0 denotes bg, 1 fg, -1 dontcare
+        rpn_bbox_targets: (1, 4xA, H, W), distances of the anchors to the gt_boxes(may contains some transform)
                         that are the regression objectives
-        rpn_bbox_inside_weights: (HxWxA, 4) weights of each boxes, mainly accepts hyper param in cfg
-        rpn_bbox_outside_weights: (HxWxA, 4) used to balance the fg/bg,
+        rpn_bbox_inside_weights: (1, 4xA, H, W) weights of each boxes, mainly accepts hyper param in cfg
+        rpn_bbox_outside_weights: (1, 4xA, H, W) used to balance the fg/bg,
         beacuse the numbers of bgs and fgs mays significiantly different
         """
         rpn_cls_score = rpn_cls_score.data.cpu().numpy()
         rpn_labels, rpn_bbox_targets, rpn_bbox_inside_weights, rpn_bbox_outside_weights = \
             anchor_target_layer_py(rpn_cls_score, gt_boxes, dontcare_areas, im_info, _feat_stride, anchor_scales)
 
-        rpn_labels = network.np_to_variable(rpn_labels, is_cuda=True)
+        rpn_labels = network.np_to_variable(rpn_labels, is_cuda=True, dtype=torch.LongTensor)
         rpn_bbox_targets = network.np_to_variable(rpn_bbox_targets, is_cuda=True)
         rpn_bbox_inside_weights = network.np_to_variable(rpn_bbox_inside_weights, is_cuda=True)
         rpn_bbox_outside_weights = network.np_to_variable(rpn_bbox_outside_weights, is_cuda=True)
@@ -172,9 +178,17 @@ class FasterRCNN(nn.Module):
                        'cow', 'diningtable', 'dog', 'horse',
                        'motorbike', 'person', 'pottedplant',
                        'sheep', 'sofa', 'train', 'tvmonitor'])
+    PIXEL_MEANS = np.array([[[102.9801, 115.9465, 122.7717]]])
+    SCALES = (600,)
+    MAX_SIZE = 1000
 
-    def __init__(self):
+    def __init__(self, classes=None):
         super(FasterRCNN, self).__init__()
+
+        if classes is not None:
+            self.classes = classes
+            self.n_classes = len(classes)
+
         self.rpn = RPN()
         self.roi_pool = RoIPool(7, 7, 1.0/16)
         self.fc6 = FC(512 * 7 * 7, 4096)
@@ -186,8 +200,12 @@ class FasterRCNN(nn.Module):
         self.cross_entropy = None
         self.loss_box = None
 
-    def forward(self, image, gt_boxes=None, dontcare_areas=None):
-        features, rois, im_info = self.rpn(image, gt_boxes, dontcare_areas)
+    @property
+    def loss(self):
+        return self.cross_entropy + self.loss_box + self.rpn.cross_entropy + self.rpn.loss_box
+
+    def forward(self, im_data, im_info, gt_boxes=None, dontcare_areas=None):
+        features, rois = self.rpn(im_data, im_info, gt_boxes, dontcare_areas)
 
         if self.training:
             roi_data = self.proposal_target_layer(rois, gt_boxes, dontcare_areas, self.n_classes)
@@ -197,7 +215,9 @@ class FasterRCNN(nn.Module):
         pooled_features = self.roi_pool(features, rois)
         x = pooled_features.view(pooled_features.size()[0], -1)
         x = self.fc6(x)
+        x = F.dropout(x, training=self.training)
         x = self.fc7(x)
+        x = F.dropout(x, training=self.training)
 
         cls_score = self.score_fc(x)
         cls_prob = F.softmax(cls_score)
@@ -206,20 +226,23 @@ class FasterRCNN(nn.Module):
         if self.training:
             self.cross_entropy, self.loss_box = self.build_loss(cls_prob, bbox_pred, roi_data)
 
-        return cls_prob, bbox_pred, rois, im_info
+        return cls_prob, bbox_pred, rois
 
     @staticmethod
     def build_loss(cls_score, bbox_pred, roi_data):
         # classification loss
-        label = roi_data[0].squeeze()
+        label = roi_data[1].squeeze()
         cross_entropy = F.cross_entropy(cls_score, label)
+        # print cross_entropy
 
         # bounding box regression L1 loss
-        fg_keep = label.ne(0).nonzero().squeeze()
-        bbox_targets = roi_data[2]
-        bbox_targets = torch.index_select(bbox_targets, 0, fg_keep)
-        bbox_pred = torch.index_select(bbox_pred, 0, fg_keep)
-        loss_box = F.smooth_l1_loss(bbox_pred, bbox_targets)
+        bbox_targets, bbox_inside_weights, bbox_outside_weights = roi_data[2:]
+
+        bbox_targets = torch.mul(bbox_targets, bbox_inside_weights)
+        bbox_pred = torch.mul(bbox_pred, bbox_inside_weights)
+
+        loss_box = F.smooth_l1_loss(bbox_pred, bbox_targets, size_average=False) / torch.sum(bbox_inside_weights.data)
+        # print loss_box
 
         return cross_entropy, loss_box
 
@@ -244,9 +267,9 @@ class FasterRCNN(nn.Module):
         rpn_rois = rpn_rois.data.cpu().numpy()
         rois, labels, bbox_targets, bbox_inside_weights, bbox_outside_weights = \
             proposal_target_layer_py(rpn_rois, gt_boxes, dontcare_areas, num_classes)
-
+        # print labels.shape, bbox_targets.shape, bbox_inside_weights.shape
         rois = network.np_to_variable(rois, is_cuda=True)
-        labels = network.np_to_variable(labels, is_cuda=True)
+        labels = network.np_to_variable(labels, is_cuda=True, dtype=torch.LongTensor)
         bbox_targets = network.np_to_variable(bbox_targets, is_cuda=True)
         bbox_inside_weights = network.np_to_variable(bbox_inside_weights, is_cuda=True)
         bbox_outside_weights = network.np_to_variable(bbox_outside_weights, is_cuda=True)
@@ -279,10 +302,60 @@ class FasterRCNN(nn.Module):
         return pred_boxes, scores, self.classes[inds]
 
     def detect(self, image, thr=0.3):
-        cls_prob, bbox_pred, rois, im_info = self(image)
+        im_data, im_scales = self.get_image_blob(image)
+        im_info = np.array(
+            [[im_data.shape[1], im_data.shape[2], im_scales[0]]],
+            dtype=np.float32)
+
+        cls_prob, bbox_pred, rois = self(im_data, im_info)
         pred_boxes, scores, classes = \
             self.interpret_faster_rcnn(cls_prob, bbox_pred, rois, im_info, image.shape, min_score=thr)
         return pred_boxes, scores, classes
+
+    def get_image_blob_noscale(self, im):
+        im_orig = im.astype(np.float32, copy=True)
+        im_orig -= self.PIXEL_MEANS
+
+        processed_ims = [im]
+        im_scale_factors = [1.0]
+
+        blob = im_list_to_blob(processed_ims)
+
+        return blob, np.array(im_scale_factors)
+
+    def get_image_blob(self, im):
+        """Converts an image into a network input.
+        Arguments:
+            im (ndarray): a color image in BGR order
+        Returns:
+            blob (ndarray): a data blob holding an image pyramid
+            im_scale_factors (list): list of image scales (relative to im) used
+                in the image pyramid
+        """
+        im_orig = im.astype(np.float32, copy=True)
+        im_orig -= self.PIXEL_MEANS
+
+        im_shape = im_orig.shape
+        im_size_min = np.min(im_shape[0:2])
+        im_size_max = np.max(im_shape[0:2])
+
+        processed_ims = []
+        im_scale_factors = []
+
+        for target_size in self.SCALES:
+            im_scale = float(target_size) / float(im_size_min)
+            # Prevent the biggest axis from being more than MAX_SIZE
+            if np.round(im_scale * im_size_max) > self.MAX_SIZE:
+                im_scale = float(self.MAX_SIZE) / float(im_size_max)
+            im = cv2.resize(im_orig, None, None, fx=im_scale, fy=im_scale,
+                            interpolation=cv2.INTER_LINEAR)
+            im_scale_factors.append(im_scale)
+            processed_ims.append(im)
+
+        # Create a blob to hold the input images
+        blob = im_list_to_blob(processed_ims)
+
+        return blob, np.array(im_scale_factors)
 
     def load_from_npz(self, params):
         self.rpn.load_from_npz(params)

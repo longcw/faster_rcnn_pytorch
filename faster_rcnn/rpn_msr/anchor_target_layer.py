@@ -239,7 +239,7 @@ def anchor_target_layer(rpn_cls_score, gt_boxes, dontcare_areas, im_info, _feat_
     # pdb.set_trace()
     labels = labels.reshape((1, height, width, A)).transpose(0, 3, 1, 2)
     labels = labels.reshape((1, 1, A * height, width))
-    rpn_labels = labels
+    rpn_labels = labels.transpose(0, 2, 3, 1).reshape(-1)
 
     # bbox_targets
     bbox_targets = bbox_targets \

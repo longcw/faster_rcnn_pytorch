@@ -49,8 +49,8 @@ def load_net(fname, net):
         v.copy_(param)
 
 
-def np_to_variable(x, is_cuda=True):
-    v = Variable(torch.from_numpy(x))
+def np_to_variable(x, is_cuda=True, dtype=torch.FloatTensor):
+    v = Variable(torch.from_numpy(x).type(dtype))
     if is_cuda:
         v = v.cuda()
     return v
