@@ -54,3 +54,16 @@ def np_to_variable(x, is_cuda=True, dtype=torch.FloatTensor):
     if is_cuda:
         v = v.cuda()
     return v
+
+
+def set_trainable(model, requires_grad):
+    for param in model.parameters():
+        param.requires_grad = requires_grad
+
+
+def weights_normal_init(model, dev=0.01):
+    for m in model.modules():
+        if isinstance(m, nn.Conv2d):
+            m.weight.data.normal_(0.0, dev)
+        elif isinstance(m, nn.Linear):
+            m.weight.data.normal_(0.0, dev)

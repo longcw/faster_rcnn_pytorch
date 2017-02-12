@@ -41,13 +41,13 @@ for year in ['2007', '2012', '0712']:
     # Set up kittivoc
     for split in ['train', 'val', 'trainval', 'test']:
         name = 'kittivoc_{}'.format(split)
-        print name
+        # print name
         __sets[name] = (lambda split=split: kittivoc(split))
 
 # # KITTI dataset
 for split in ['train', 'val', 'trainval', 'test']:
     name = 'kitti_{}'.format(split)
-    print name
+    # print name
     __sets[name] = (lambda split=split: kitti(split))
 
 # Set up coco_2014_<split>
@@ -65,7 +65,7 @@ for year in ['2015']:
 # NTHU dataset
 for split in ['71', '370']:
     name = 'nthu_{}'.format(split)
-    print name
+    # print name
     __sets[name] = (lambda split=split: nthu(split))
 
 

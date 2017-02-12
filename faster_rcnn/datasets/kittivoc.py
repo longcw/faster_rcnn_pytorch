@@ -8,7 +8,7 @@
 import xml.dom.minidom as minidom
 
 import os
-import PIL
+# import PIL
 import numpy as np
 import scipy.sparse
 import subprocess

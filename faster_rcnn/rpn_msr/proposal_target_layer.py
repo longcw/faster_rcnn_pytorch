@@ -69,15 +69,15 @@ def proposal_target_layer(rpn_rois, gt_boxes, dontcare_areas, _num_classes):
         all_rois, gt_boxes, dontcare_areas, fg_rois_per_image,
         rois_per_image, _num_classes)
 
-    # if DEBUG:
-    #     print 'num fg: {}'.format((labels > 0).sum())
-    #     print 'num bg: {}'.format((labels == 0).sum())
-    #     _count += 1
-    #     _fg_num += (labels > 0).sum()
-    #     _bg_num += (labels == 0).sum()
-    #     print 'num fg avg: {}'.format(_fg_num / _count)
-    #     print 'num bg avg: {}'.format(_bg_num / _count)
-    #     print 'ratio: {:.3f}'.format(float(_fg_num) / float(_bg_num))
+    if DEBUG:
+        print 'num fg: {}'.format((labels > 0).sum())
+        print 'num bg: {}'.format((labels == 0).sum())
+        # _count += 1
+        # _fg_num += (labels > 0).sum()
+        # _bg_num += (labels == 0).sum()
+        # print 'num fg avg: {}'.format(_fg_num / _count)
+        # print 'num bg avg: {}'.format(_bg_num / _count)
+        # print 'ratio: {:.3f}'.format(float(_fg_num) / float(_bg_num))
 
     rois = rois.reshape(-1, 5)
     labels = labels.reshape(-1, 1)
@@ -157,21 +157,25 @@ def _sample_rois(all_rois, gt_boxes, dontcare_areas, fg_rois_per_image, rois_per
     # Select foreground RoIs as those with >= FG_THRESH overlap
     fg_inds = np.where(max_overlaps >= cfg.TRAIN.FG_THRESH)[0]
     fg_inds = np.setdiff1d(fg_inds, ignore_inds)
-    # Guard against the case when an image has fewer than fg_rois_per_image
-    # foreground RoIs
-    fg_rois_per_this_image = min(fg_rois_per_image, fg_inds.size)
-    # Sample foreground regions without replacement
-    if fg_inds.size > 0:
-        fg_inds = npr.choice(fg_inds, size=fg_rois_per_this_image, replace=False)
 
     # Select background RoIs as those within [BG_THRESH_LO, BG_THRESH_HI)
     bg_inds = np.where((max_overlaps < cfg.TRAIN.BG_THRESH_HI) &
                        (max_overlaps >= cfg.TRAIN.BG_THRESH_LO))[0]
     bg_inds = np.setdiff1d(bg_inds, ignore_inds)
+
+    # Guard against the case when an image has fewer than fg_rois_per_image
+    # foreground RoIs
+    fg_rois_per_this_image = int(min(fg_rois_per_image, fg_inds.size))
+    # fg_rois_per_this_image = int(min(bg_inds.size, fg_inds.size))
+    # Sample foreground regions without replacement
+    if fg_inds.size > 0:
+        fg_inds = npr.choice(fg_inds, size=fg_rois_per_this_image, replace=False)
+
     # Compute number of background RoIs to take from this image (guarding
     # against there being fewer than desired)
     bg_rois_per_this_image = rois_per_image - fg_rois_per_this_image
     bg_rois_per_this_image = min(bg_rois_per_this_image, bg_inds.size)
+    # bg_rois_per_this_image = fg_rois_per_this_image
     # Sample background regions without replacement
     if bg_inds.size > 0:
         bg_inds = npr.choice(bg_inds, size=bg_rois_per_this_image, replace=False)
