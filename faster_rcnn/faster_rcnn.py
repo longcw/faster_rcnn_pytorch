@@ -226,7 +226,7 @@ class FasterRCNN(nn.Module):
         # print self.loss_box
         # print self.rpn.cross_entropy
         # print self.rpn.loss_box
-        return self.cross_entropy + self.loss_box * 10 + self.rpn.loss
+        return self.cross_entropy + self.loss_box * 10
 
     def forward(self, im_data, im_info, gt_boxes=None, dontcare_areas=None):
         features, rois = self.rpn(im_data, im_info, gt_boxes, dontcare_areas)
@@ -258,10 +258,10 @@ class FasterRCNN(nn.Module):
         fg_cnt = torch.sum(label.data.ne(0))
         bg_cnt = label.data.numel() - fg_cnt
 
-        # ce_weights = torch.ones(cls_score.size()[1])
-        # ce_weights[0] = float(fg_cnt) / bg_cnt / 3.0
-        # # ce_weights[0] = 1./50
-        # ce_weights = ce_weights.cuda()
+        ce_weights = torch.ones(cls_score.size()[1])
+        ce_weights[0] = float(fg_cnt) / bg_cnt
+        # ce_weights[0] = 1./50
+        ce_weights = ce_weights.cuda()
 
         maxv, predict = cls_score.data.max(1)
         self.tp = torch.sum(predict[:fg_cnt].eq(label.data[:fg_cnt]))
@@ -269,7 +269,7 @@ class FasterRCNN(nn.Module):
         self.fg_cnt = fg_cnt
         self.bg_cnt = bg_cnt
         # print predict
-        cross_entropy = F.cross_entropy(cls_score, label)
+        cross_entropy = F.cross_entropy(cls_score, label, weight=ce_weights)
         # print cross_entropy
 
         # bounding box regression L1 loss

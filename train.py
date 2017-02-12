@@ -32,11 +32,12 @@ roidb = imdb.roidb
 data_layer = RoIDataLayer(roidb, imdb.num_classes)
 
 net = FasterRCNN(classes=imdb.classes)
-network.weights_normal_init(net, dev=0.01)
-net.rpn.features.load_from_npy_file(pretrained_model)
-# model_file = '/media/longc/Data/models/VGGnet_fast_rcnn_iter_70000.h5'
+# network.weights_normal_init(net, dev=0.01)
+# net.rpn.features.load_from_npy_file(pretrained_model)
+model_file = '/media/longc/Data/models/VGGnet_fast_rcnn_iter_70000.h5'
 # model_file = '/media/longc/Data/models/faster_rcnn_pytorch/faster_rcnn_10000.h5'
-# network.load_net(model_file, net)
+network.load_net(model_file, net)
+network.weights_normal_init([net.bbox_fc, net.score_fc, net.fc6, net.fc7], dev=0.01)
 
 # net = net.rpn
 
@@ -46,10 +47,12 @@ net.train()
 params = list(net.parameters())
 for p in params:
     print p.size()
-# optimizer = torch.optim.Adam(params[8:], lr=lr)
-optimizer = torch.optim.SGD(params[8:-8], lr=lr, momentum=0.9, weight_decay=0.0005)
-train_all = False
-target_net = net.rpn
+# optimizer = torch.optim.Adam(params[-8:], lr=lr)
+optimizer = torch.optim.SGD(params[-8:], lr=lr, momentum=0.9, weight_decay=0.0005)
+train_all = True
+# target_net = net.rpn
+target_net = net
+network.set_trainable(net.rpn, False)
 
 if not os.path.exists(output_dir):
     os.mkdir(output_dir)
@@ -85,6 +88,7 @@ for step in range(0, max_iters+1):
     # backward
     optimizer.zero_grad()
     loss.backward()
+    network.clip_gradient(target_net, 10.)
     optimizer.step()
 
     if step % log_interval == 0:
@@ -103,12 +107,15 @@ for step in range(0, max_iters+1):
         tp, tf, fg, bg = 0., 0., 0, 0
         t.tic()
 
-    if step % 20000 == 0 and step > 0:
+    if step % 10000 == 0 and step > 0:
         save_name = os.path.join(output_dir, 'faster_rcnn_{}.h5'.format(step))
         network.save_net(save_name, net)
         print('save model: {}'.format(save_name))
-        lr /= 3
-        optimizer = torch.optim.SGD(params[8:], lr=lr, momentum=0.9, weight_decay=0.0005)
-        # optimizer = torch.optim.Adam(params[8:], lr=lr)
-        train_all = True
-        target_net = net
+        # lr /= 10
+        # optimizer = torch.optim.SGD(params[-8:], lr=lr, momentum=0.9, weight_decay=0.0005)
+        # if step >= 20000:
+        #     lr /= 3
+        #     optimizer = torch.optim.SGD(params[8:], lr=lr, momentum=0.9, weight_decay=0.0005)
+        #     # optimizer = torch.optim.Adam(params[8:], lr=lr)
+        #     train_all = True
+        #     target_net = net

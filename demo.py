@@ -7,13 +7,14 @@ from faster_rcnn.utils.timer import Timer
 
 def test():
     import os
-    im_file = 'demo/004545.jpg'
+    # im_file = 'demo/004545.jpg'
     im_file = 'data/VOCdevkit2007/VOC2007/JPEGImages/009936.jpg'
-    im_file = '/media/longc/Data/data/2DMOT2015/test/ETH-Crossing/img1/000100.jpg'
+    # im_file = '/media/longc/Data/data/2DMOT2015/test/ETH-Crossing/img1/000100.jpg'
     image = cv2.imread(im_file)
 
     # model_file = '/media/longc/Data/models/VGGnet_fast_rcnn_iter_70000.h5'
     model_file = '/media/longc/Data/models/faster_rcnn_pytorch/faster_rcnn_30000.h5'
+    # model_file = '/media/longc/Data/models/faster_rcnn_pytorch2/faster_rcnn_2000.h5'
     detector = FasterRCNN()
     network.load_net(model_file, detector)
     detector.cuda()
