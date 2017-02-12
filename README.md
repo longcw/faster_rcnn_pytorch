@@ -15,7 +15,7 @@ by Shaoqing Ren, Kaiming He, Ross Girshick, Jian Sun.
 - [x] roi pooling layer implemented by python and pytorch
 - [x] roi pooling layer with C extensions on CPU (only forward)
 - [x] roi pooling layer on GPU (forward and backward)
-- [ ] backward pass for training
+- [x] backward pass for training (experimental)
 
 ### Installation and demo
 1. Clone the Faster R-CNN repository
@@ -32,3 +32,23 @@ by Shaoqing Ren, Kaiming He, Ross Girshick, Jian Sun.
 and set the model path in `demo.py`
 3. Run demo `python demo.py`
 
+### Training on Pascal VOC 2007
+**NOTE: The training method in this project is still experimental.**
+
+Follow [this project (TFFRCNN)](https://github.com/CharlesShang/TFFRCNN)
+to download and prepare the training, validation, test data 
+and the VGG16 model pre-trained on ImageNet. 
+
+Since the program loading the data in `faster_rcnn_pytorch/data` by default,
+you can set the data path as following.
+```bash
+cd faster_rcnn_pytorch
+mkdir data
+cd data
+ln -s $VOCdevkit VOCdevkit2007
+```
+
+Then you can set some hyper-parameters in `train.py` and training parameters in the `.yml` file.
+
+You may need to train RPN and the classifier separately as described in the Faster RCNN paper
+and tune the loss function defined in `faster_rcnn/faster_rcnn.py` by yourself.
