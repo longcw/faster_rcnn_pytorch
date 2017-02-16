@@ -10,12 +10,12 @@ by Shaoqing Ren, Kaiming He, Ross Girshick, Jian Sun.
 
 ### Progress
 
-- [x] forward pass for detecting
-- [x] using models trained by Tensorflow
-- [x] roi pooling layer implemented by python and pytorch
-- [x] roi pooling layer with C extensions on CPU (only forward)
-- [x] roi pooling layer on GPU (forward and backward)
-- [x] backward pass for training (experimental)
+- [x] Forward for detecting
+- [x] RoI Pooling layer with C extensions on CPU (only forward)
+- [x] RoI Pooling layer on GPU (forward and backward)
+- [x] Training on VOC2007 (experimental)
+- [x] TensroBoard support
+- [ ] Evaluation
 
 ### Installation and demo
 1. Clone the Faster R-CNN repository
@@ -51,3 +51,11 @@ ln -s $VOCdevkit VOCdevkit2007
 Then you can set some hyper-parameters in `train.py` and training parameters in the `.yml` file.
 
 You may need to tune the loss function defined in `faster_rcnn/faster_rcnn.py` by yourself.
+
+### Training with TensorBoard
+With the aid of [Crayon](https://github.com/torrvision/crayon),
+we can access the visualisation power of TensorBoard for any 
+deep learning framework.
+
+To use the TensorBoard, install Crayon (https://github.com/torrvision/crayon)
+and set `use_tensorboard = True` in `faster_rcnn/train.py`.

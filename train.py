@@ -1,6 +1,7 @@
 import os
 import torch
 import numpy as np
+from datetime import datetime
 
 from faster_rcnn import network
 from faster_rcnn.faster_rcnn import FasterRCNN, RPN
@@ -15,6 +16,11 @@ try:
     from termcolor import cprint
 except ImportError:
     cprint = None
+
+try:
+    from pycrayon import CrayonClient
+except ImportError:
+    CrayonClient = None
 
 
 def log_print(text, color=None, on_color=None, attrs=None):
@@ -35,6 +41,8 @@ output_dir = 'models/saved_model'
 max_iters = 100000
 rand_seed = 1024
 _DEBUG = True
+use_tensorboard = True
+remove_all_log = True   # remove all historical experiments in TensorBoard
 
 # ------------
 
@@ -46,7 +54,8 @@ cfg_from_file(cfg_file)
 lr = cfg.TRAIN.LEARNING_RATE
 momentum = cfg.TRAIN.MOMENTUM
 weight_decay = cfg.TRAIN.WEIGHT_DECAY
-log_interval = cfg.TRAIN.DISPLAY
+disp_interval = cfg.TRAIN.DISPLAY
+log_interval = cfg.TRAIN.LOG_IMAGE_ITERS
 
 # load data
 imdb = get_imdb(imdb_name)
@@ -73,10 +82,20 @@ optimizer = torch.optim.SGD(params[8:], lr=lr, momentum=momentum, weight_decay=w
 if not os.path.exists(output_dir):
     os.mkdir(output_dir)
 
+# tensorboad
+use_tensorboard = use_tensorboard and CrayonClient is not None
+if use_tensorboard:
+    cc = CrayonClient(hostname='127.0.0.1')
+    if remove_all_log:
+        cc.remove_all_experiments()
+    exp_name = datetime.now().strftime('vgg16_%m-%d_%H-%M')
+    exp = cc.create_experiment(exp_name)
+
 # training
 train_loss = 0
 tp, tf, fg, bg = 0., 0., 0, 0
 step_cnt = 0
+re_cnt = False
 t = Timer()
 t.tic()
 for step in range(0, max_iters+1):
@@ -108,7 +127,7 @@ for step in range(0, max_iters+1):
     network.clip_gradient(net, 10.)
     optimizer.step()
 
-    if step % log_interval == 0:
+    if step % disp_interval == 0:
         duration = t.toc(average=False)
         fps = step_cnt / duration
 
@@ -122,10 +141,18 @@ for step in range(0, max_iters+1):
                 net.rpn.cross_entropy.data.cpu().numpy()[0], net.rpn.loss_box.data.cpu().numpy()[0],
                 net.cross_entropy.data.cpu().numpy()[0], net.loss_box.data.cpu().numpy()[0])
             )
-            tp, tf, fg, bg = 0., 0., 0, 0
-        train_loss = 0
-        step_cnt = 0
-        t.tic()
+        re_cnt = True
+
+    if use_tensorboard and step % log_interval == 0:
+        exp.add_scalar_value('train_loss', train_loss / step_cnt, step=step)
+        if _DEBUG:
+            exp.add_scalar_value('true_positive', tp/fg*100., step=step)
+            exp.add_scalar_value('true_negative', tf/bg*100., step=step)
+            losses = {'rpn_cls': float(net.rpn.cross_entropy.data.cpu().numpy()[0]),
+                      'rpn_box': float(net.rpn.loss_box.data.cpu().numpy()[0]),
+                      'rcnn_cls': float(net.cross_entropy.data.cpu().numpy()[0]),
+                      'rcnn_box': float(net.loss_box.data.cpu().numpy()[0])}
+            exp.add_scalar_dict(losses, step=step)
 
     if (step % 10000 == 0) and step > 0:
         save_name = os.path.join(output_dir, 'faster_rcnn_{}.h5'.format(step))
@@ -134,4 +161,11 @@ for step in range(0, max_iters+1):
         if step >= 60000:
             lr /= 10.
             optimizer = torch.optim.SGD(params[8:], lr=lr, momentum=momentum, weight_decay=weight_decay)
+
+    if re_cnt:
+        tp, tf, fg, bg = 0., 0., 0, 0
+        train_loss = 0
+        step_cnt = 0
+        t.tic()
+        re_cnt = False
 
