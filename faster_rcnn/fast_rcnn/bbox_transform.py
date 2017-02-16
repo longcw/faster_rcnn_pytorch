@@ -10,10 +10,20 @@ from sympy.physics.paulialgebra import delta
 
 
 def bbox_transform(ex_rois, gt_rois):
+    """
+    computes the distance from ground-truth boxes to the given boxes, normed by their size
+    :param ex_rois: n * 4 numpy array, given boxes
+    :param gt_rois: n * 4 numpy array, ground-truth boxes
+    :return: deltas: n * 4 numpy array, ground-truth boxes
+    """
     ex_widths = ex_rois[:, 2] - ex_rois[:, 0] + 1.0
     ex_heights = ex_rois[:, 3] - ex_rois[:, 1] + 1.0
     ex_ctr_x = ex_rois[:, 0] + 0.5 * ex_widths
     ex_ctr_y = ex_rois[:, 1] + 0.5 * ex_heights
+
+    # assert np.min(ex_widths) > 0.1 and np.min(ex_heights) > 0.1, \
+    #     'Invalid boxes found: {} {}'. \
+    #         format(ex_rois[np.argmin(ex_widths), :], ex_rois[np.argmin(ex_heights), :])
 
     gt_widths = gt_rois[:, 2] - gt_rois[:, 0] + 1.0
     gt_heights = gt_rois[:, 3] - gt_rois[:, 1] + 1.0

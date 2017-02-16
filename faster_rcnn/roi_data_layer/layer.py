@@ -30,6 +30,7 @@ class RoIDataLayer(object):
     def _shuffle_roidb_inds(self):
         """Randomly permute the training roidb."""
         self._perm = np.random.permutation(np.arange(len(self._roidb)))
+        # self._perm = np.arange(len(self._roidb))
         self._cur = 0
 
     def _get_next_minibatch_inds(self):

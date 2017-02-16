@@ -7,13 +7,13 @@ from faster_rcnn.utils.timer import Timer
 
 def test():
     import os
-    # im_file = 'demo/004545.jpg'
-    im_file = 'data/VOCdevkit2007/VOC2007/JPEGImages/009936.jpg'
+    im_file = 'demo/004545.jpg'
+    # im_file = 'data/VOCdevkit2007/VOC2007/JPEGImages/009036.jpg'
     # im_file = '/media/longc/Data/data/2DMOT2015/test/ETH-Crossing/img1/000100.jpg'
     image = cv2.imread(im_file)
 
-    # model_file = '/media/longc/Data/models/VGGnet_fast_rcnn_iter_70000.h5'
-    model_file = '/media/longc/Data/models/faster_rcnn_pytorch/faster_rcnn_30000.h5'
+    model_file = '/media/longc/Data/models/VGGnet_fast_rcnn_iter_70000.h5'
+    # model_file = '/media/longc/Data/models/faster_rcnn_pytorch3/faster_rcnn_100000.h5'
     # model_file = '/media/longc/Data/models/faster_rcnn_pytorch2/faster_rcnn_2000.h5'
     detector = FasterRCNN()
     network.load_net(model_file, detector)
@@ -38,8 +38,8 @@ def test():
         cv2.putText(im2show, '%s: %.3f' % (classes[i], scores[i]), (det[0], det[1] + 15), cv2.FONT_HERSHEY_PLAIN,
                     1.0, (0, 0, 255), thickness=1)
     cv2.imwrite(os.path.join('demo', 'out.jpg'), im2show)
-    # cv2.imshow('demo', im2show)
-    # cv2.waitKey(0)
+    cv2.imshow('demo', im2show)
+    cv2.waitKey(0)
 
 
 if __name__ == '__main__':

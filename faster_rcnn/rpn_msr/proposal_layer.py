@@ -6,11 +6,15 @@
 # --------------------------------------------------------
 
 import numpy as np
-from ..fast_rcnn.config import cfg
-from ..fast_rcnn.nms_wrapper import nms
+import yaml
 
-from faster_rcnn.fast_rcnn.bbox_transform import bbox_transform_inv, clip_boxes
-from generate_anchors import generate_anchors
+from .generate_anchors import generate_anchors
+
+# TODO: make fast_rcnn irrelevant
+# >>>> obsolete, because it depends on sth outside of this project
+from ..fast_rcnn.config import cfg
+from ..fast_rcnn.bbox_transform import bbox_transform_inv, clip_boxes
+from ..fast_rcnn.nms_wrapper import nms
 
 # <<<< obsolete
 
@@ -22,7 +26,23 @@ transformations to a set of regular boxes (called "anchors").
 """
 
 
-def proposal_layer(rpn_cls_prob_reshape, rpn_bbox_pred, im_info, cfg_key, _feat_stride, anchor_scales):
+def proposal_layer(rpn_cls_prob_reshape, rpn_bbox_pred, im_info, cfg_key, _feat_stride=[16, ],
+                   anchor_scales=[8, 16, 32]):
+    """
+    Parameters
+    ----------
+    rpn_cls_prob_reshape: (1 , H , W , Ax2) outputs of RPN, prob of bg or fg
+                         NOTICE: the old version is ordered by (1, H, W, 2, A) !!!!
+    rpn_bbox_pred: (1 , H , W , Ax4), rgs boxes output of RPN
+    im_info: a list of [image_height, image_width, scale_ratios]
+    cfg_key: 'TRAIN' or 'TEST'
+    _feat_stride: the downsampling ratio of feature map to the original input image
+    anchor_scales: the scales to the basic_anchor (basic anchor is [16, 16])
+    ----------
+    Returns
+    ----------
+    rpn_rois : (1 x H x W x A, 5) e.g. [0, x1, y1, x2, y2]
+
     # Algorithm:
     #
     # for each (H, W) location i
@@ -35,12 +55,13 @@ def proposal_layer(rpn_cls_prob_reshape, rpn_bbox_pred, im_info, cfg_key, _feat_
     # apply NMS with threshold 0.7 to remaining proposals
     # take after_nms_topN proposals after NMS
     # return the top proposals (-> RoIs top, scores top)
-    # layer_params = yaml.load(self.param_str_)
+    #layer_params = yaml.load(self.param_str_)
+
+    """
     _anchors = generate_anchors(scales=np.array(anchor_scales))
     _num_anchors = _anchors.shape[0]
-    # don't need transpose for pytorch
-    # rpn_cls_prob_reshape = np.transpose(rpn_cls_prob_reshape, [0, 3, 1, 2])
-    # rpn_bbox_pred = np.transpose(rpn_bbox_pred, [0, 3, 1, 2])
+    # rpn_cls_prob_reshape = np.transpose(rpn_cls_prob_reshape,[0,3,1,2]) #-> (1 , 2xA, H , W)
+    # rpn_bbox_pred = np.transpose(rpn_bbox_pred,[0,3,1,2])              # -> (1 , Ax4, H , W)
 
     # rpn_cls_prob_reshape = np.transpose(np.reshape(rpn_cls_prob_reshape,[1,rpn_cls_prob_reshape.shape[0],rpn_cls_prob_reshape.shape[1],rpn_cls_prob_reshape.shape[2]]),[0,3,2,1])
     # rpn_bbox_pred = np.transpose(rpn_bbox_pred,[0,3,2,1])
@@ -118,6 +139,11 @@ def proposal_layer(rpn_cls_prob_reshape, rpn_bbox_pred, im_info, cfg_key, _feat_
     proposals = proposals[keep, :]
     scores = scores[keep]
 
+    # # remove irregular boxes, too fat too tall
+    # keep = _filter_irregular_boxes(proposals)
+    # proposals = proposals[keep, :]
+    # scores = scores[keep]
+
     # 4. sort all (proposal, score) pairs by score from highest to lowest
     # 5. take top pre_nms_topN (e.g. 6000)
     order = scores.ravel().argsort()[::-1]
@@ -139,7 +165,6 @@ def proposal_layer(rpn_cls_prob_reshape, rpn_bbox_pred, im_info, cfg_key, _feat_
     # batch inds are 0
     batch_inds = np.zeros((proposals.shape[0], 1), dtype=np.float32)
     blob = np.hstack((batch_inds, proposals.astype(np.float32, copy=False)))
-    # print(blob.shape)
     return blob
     # top[0].reshape(*(blob.shape))
     # top[0].data[...] = blob
@@ -155,4 +180,13 @@ def _filter_boxes(boxes, min_size):
     ws = boxes[:, 2] - boxes[:, 0] + 1
     hs = boxes[:, 3] - boxes[:, 1] + 1
     keep = np.where((ws >= min_size) & (hs >= min_size))[0]
+    return keep
+
+
+def _filter_irregular_boxes(boxes, min_ratio=0.2, max_ratio=5):
+    """Remove all boxes with any side smaller than min_size."""
+    ws = boxes[:, 2] - boxes[:, 0] + 1
+    hs = boxes[:, 3] - boxes[:, 1] + 1
+    rs = ws / hs
+    keep = np.where((rs <= max_ratio) & (rs >= min_ratio))[0]
     return keep

@@ -50,5 +50,4 @@ ln -s $VOCdevkit VOCdevkit2007
 
 Then you can set some hyper-parameters in `train.py` and training parameters in the `.yml` file.
 
-You may need to train RPN and the classifier separately as described in the Faster RCNN paper
-and tune the loss function defined in `faster_rcnn/faster_rcnn.py` by yourself.
+You may need to tune the loss function defined in `faster_rcnn/faster_rcnn.py` by yourself.

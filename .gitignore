@@ -94,3 +94,6 @@ ENV/
 .idea
 extension-ffi
 demo_mot.py
+*.o
+data/
+models
