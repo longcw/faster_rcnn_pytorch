@@ -97,3 +97,4 @@ demo_mot.py
 *.o
 data/
 models
+output

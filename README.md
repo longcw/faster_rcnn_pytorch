@@ -15,7 +15,7 @@ by Shaoqing Ren, Kaiming He, Ross Girshick, Jian Sun.
 - [x] RoI Pooling layer on GPU (forward and backward)
 - [x] Training on VOC2007 (experimental)
 - [x] TensroBoard support
-- [ ] Evaluation
+- [x] Evaluation
 
 ### Installation and demo
 1. Clone the Faster R-CNN repository
@@ -59,3 +59,11 @@ deep learning framework.
 
 To use the TensorBoard, install Crayon (https://github.com/torrvision/crayon)
 and set `use_tensorboard = True` in `faster_rcnn/train.py`.
+
+### Evaluation
+Set the path of the trained model in `test.py`.
+```bash
+cd faster_rcnn_pytorch
+mkdir output
+python test.py
+```

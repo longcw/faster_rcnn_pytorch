@@ -42,7 +42,7 @@ max_iters = 100000
 rand_seed = 1024
 _DEBUG = True
 use_tensorboard = True
-remove_all_log = True   # remove all historical experiments in TensorBoard
+remove_all_log = False   # remove all historical experiments in TensorBoard
 
 # ------------
 
