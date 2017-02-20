@@ -36,13 +36,18 @@ def log_print(text, color=None, on_color=None, attrs=None):
 imdb_name = 'voc_2007_trainval'
 cfg_file = 'experiments/cfgs/faster_rcnn_end2end.yml'
 pretrained_model = 'data/pretrained_model/VGG_imagenet.npy'
-output_dir = 'models/saved_model'
+output_dir = 'models/saved_model3'
 
-max_iters = 100000
+start_step = 0
+end_step = 100000
+lr_decay_steps = {60000, 80000}
+lr_decay = 1./10
+
 rand_seed = 1024
 _DEBUG = True
 use_tensorboard = True
 remove_all_log = False   # remove all historical experiments in TensorBoard
+exp_name = None # the previous experiment name in TensorBoard
 
 # ------------
 
@@ -68,8 +73,11 @@ net = FasterRCNN(classes=imdb.classes, debug=_DEBUG)
 network.weights_normal_init(net, dev=0.01)
 network.load_pretrained_npy(net, pretrained_model)
 # model_file = '/media/longc/Data/models/VGGnet_fast_rcnn_iter_70000.h5'
-# model_file = '/media/longc/Data/models/faster_rcnn_pytorch/faster_rcnn_100000.h5'
+# model_file = 'models/saved_model3/faster_rcnn_60000.h5'
 # network.load_net(model_file, net)
+# exp_name = 'vgg16_02-19_13-24'
+# start_step = 60001
+# lr /= 10.
 # network.weights_normal_init([net.bbox_fc, net.score_fc, net.fc6, net.fc7], dev=0.01)
 
 net.cuda()
@@ -88,8 +96,11 @@ if use_tensorboard:
     cc = CrayonClient(hostname='127.0.0.1')
     if remove_all_log:
         cc.remove_all_experiments()
-    exp_name = datetime.now().strftime('vgg16_%m-%d_%H-%M')
-    exp = cc.create_experiment(exp_name)
+    if exp_name is None:
+        exp_name = datetime.now().strftime('vgg16_%m-%d_%H-%M')
+        exp = cc.create_experiment(exp_name)
+    else:
+        exp = cc.open_experiment(exp_name)
 
 # training
 train_loss = 0
@@ -98,7 +109,7 @@ step_cnt = 0
 re_cnt = False
 t = Timer()
 t.tic()
-for step in range(0, max_iters+1):
+for step in range(start_step, end_step+1):
 
     # get one batch
     blobs = data_layer.forward()
@@ -145,6 +156,7 @@ for step in range(0, max_iters+1):
 
     if use_tensorboard and step % log_interval == 0:
         exp.add_scalar_value('train_loss', train_loss / step_cnt, step=step)
+        exp.add_scalar_value('learning_rate', lr, step=step)
         if _DEBUG:
             exp.add_scalar_value('true_positive', tp/fg*100., step=step)
             exp.add_scalar_value('true_negative', tf/bg*100., step=step)
@@ -158,9 +170,9 @@ for step in range(0, max_iters+1):
         save_name = os.path.join(output_dir, 'faster_rcnn_{}.h5'.format(step))
         network.save_net(save_name, net)
         print('save model: {}'.format(save_name))
-        if step >= 60000:
-            lr /= 10.
-            optimizer = torch.optim.SGD(params[8:], lr=lr, momentum=momentum, weight_decay=weight_decay)
+    if step in lr_decay_steps:
+        lr *= lr_decay
+        optimizer = torch.optim.SGD(params[8:], lr=lr, momentum=momentum, weight_decay=weight_decay)
 
     if re_cnt:
         tp, tf, fg, bg = 0., 0., 0, 0

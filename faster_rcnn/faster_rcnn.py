@@ -47,7 +47,7 @@ class RPN(nn.Module):
 
     @property
     def loss(self):
-        return self.cross_entropy + self.loss_box
+        return self.cross_entropy + self.loss_box * 10
 
     def forward(self, im_data, im_info, gt_boxes=None, gt_ishard=None, dontcare_areas=None):
         im_data = network.np_to_variable(im_data, is_cuda=True)
@@ -239,6 +239,7 @@ class FasterRCNN(nn.Module):
         # classification loss
         label = roi_data[1].squeeze()
         fg_cnt = torch.sum(label.data.ne(0))
+        bg_cnt = label.data.numel() - fg_cnt
 
         # for log
         if self.debug:
@@ -246,12 +247,12 @@ class FasterRCNN(nn.Module):
             self.tp = torch.sum(predict[:fg_cnt].eq(label.data[:fg_cnt])) if fg_cnt > 0 else 0
             self.tf = torch.sum(predict[fg_cnt:].eq(label.data[fg_cnt:]))
             self.fg_cnt = fg_cnt
-            self.bg_cnt = label.data.numel() - fg_cnt
+            self.bg_cnt = bg_cnt
 
-        # ce_weights = torch.ones(cls_score.size()[1])
-        # ce_weights[0] = float(fg_cnt) / bg_cnt
-        # ce_weights = ce_weights.cuda()
-        cross_entropy = F.cross_entropy(cls_score, label, weight=None)
+        ce_weights = torch.ones(cls_score.size()[1])
+        ce_weights[0] = float(fg_cnt) / bg_cnt
+        ce_weights = ce_weights.cuda()
+        cross_entropy = F.cross_entropy(cls_score, label, weight=ce_weights)
 
         # bounding box regression L1 loss
         bbox_targets, bbox_inside_weights, bbox_outside_weights = roi_data[2:]

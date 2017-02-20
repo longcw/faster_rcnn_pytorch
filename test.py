@@ -19,7 +19,7 @@ from faster_rcnn.fast_rcnn.config import cfg, cfg_from_file, get_output_dir
 imdb_name = 'voc_2007_test'
 cfg_file = 'experiments/cfgs/faster_rcnn_end2end.yml'
 # trained_model = '/media/longc/Data/models/VGGnet_fast_rcnn_iter_70000.h5'
-trained_model = 'models/saved_model/faster_rcnn_100000.h5'
+trained_model = 'models/saved_model3/faster_rcnn_90000.h5'
 
 rand_seed = 1024
 
@@ -50,7 +50,6 @@ def vis_detections(im, class_name, dets, thresh=0.8):
             cv2.putText(im, '%s: %.3f' % (class_name, score), (bbox[0], bbox[1] + 15), cv2.FONT_HERSHEY_PLAIN,
                         1.0, (0, 0, 255), thickness=1)
     return im
-
 
 
 def im_detect(net, image):

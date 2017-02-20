@@ -37,8 +37,6 @@ class RoIPoolFunction(Function):
         return output
 
     def backward(self, grad_output):
-        # TODO: roi_pooling backward
-
         assert(self.feature_size is not None and grad_output.is_cuda)
 
         batch_size, num_channels, data_height, data_width = self.feature_size

@@ -13,7 +13,7 @@ by Shaoqing Ren, Kaiming He, Ross Girshick, Jian Sun.
 - [x] Forward for detecting
 - [x] RoI Pooling layer with C extensions on CPU (only forward)
 - [x] RoI Pooling layer on GPU (forward and backward)
-- [x] Training on VOC2007 (experimental)
+- [x] Training on VOC2007
 - [x] TensroBoard support
 - [x] Evaluation
 
@@ -33,7 +33,6 @@ and set the model path in `demo.py`
 3. Run demo `python demo.py`
 
 ### Training on Pascal VOC 2007
-**NOTE: The training method in this project is still experimental.**
 
 Follow [this project (TFFRCNN)](https://github.com/CharlesShang/TFFRCNN)
 to download and prepare the training, validation, test data 
@@ -50,6 +49,7 @@ ln -s $VOCdevkit VOCdevkit2007
 
 Then you can set some hyper-parameters in `train.py` and training parameters in the `.yml` file.
 
+Now I got a 0.661 mAP on VOC07 while the origin paper got a 0.699 mAP.
 You may need to tune the loss function defined in `faster_rcnn/faster_rcnn.py` by yourself.
 
 ### Training with TensorBoard

@@ -12,7 +12,11 @@ cimport numpy as np
 DTYPE = np.float
 ctypedef np.float_t DTYPE_t
 
-def bbox_overlaps(
+def bbox_overlaps(np.ndarray[DTYPE_t, ndim=2] boxes,
+        np.ndarray[DTYPE_t, ndim=2] query_boxes):
+    return bbox_overlaps_c(boxes, query_boxes)
+
+cdef np.ndarray[DTYPE_t, ndim=2] bbox_overlaps_c(
         np.ndarray[DTYPE_t, ndim=2] boxes,
         np.ndarray[DTYPE_t, ndim=2] query_boxes):
     """
@@ -56,6 +60,12 @@ def bbox_overlaps(
 
 
 def bbox_intersections(
+        np.ndarray[DTYPE_t, ndim=2] boxes,
+        np.ndarray[DTYPE_t, ndim=2] query_boxes):
+    return bbox_intersections_c(boxes, query_boxes)
+
+
+cdef np.ndarray[DTYPE_t, ndim=2] bbox_intersections_c(
         np.ndarray[DTYPE_t, ndim=2] boxes,
         np.ndarray[DTYPE_t, ndim=2] query_boxes):
     """
