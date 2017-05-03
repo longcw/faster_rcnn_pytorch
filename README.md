@@ -67,3 +67,5 @@ cd faster_rcnn_pytorch
 mkdir output
 python test.py
 ```
+
+License: MIT license (MIT)
