@@ -18,6 +18,15 @@ by Shaoqing Ren, Kaiming He, Ross Girshick, Jian Sun.
 - [x] Evaluation
 
 ### Installation and demo
+0. Install the requirements (you can use pip or [Anaconda](https://www.continuum.io/downloads)):
+
+    ```
+    conda install pip pyyaml sympy h5py cython numpy scipy
+    conda install -c menpo opencv3
+    pip install easydict
+    ```
+
+
 1. Clone the Faster R-CNN repository
     ```bash
     git clone git@github.com:longcw/faster_rcnn_pytorch.git
