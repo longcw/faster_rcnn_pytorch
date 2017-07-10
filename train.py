@@ -88,7 +88,7 @@ params = list(net.parameters())
 optimizer = torch.optim.SGD(params[8:], lr=lr, momentum=momentum, weight_decay=weight_decay)
 
 if not os.path.exists(output_dir):
-    os.mkdir(output_dir)
+    os.makedirs(output_dir)
 
 # tensorboad
 use_tensorboard = use_tensorboard and CrayonClient is not None
