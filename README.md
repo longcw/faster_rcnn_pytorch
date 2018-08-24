@@ -1,10 +1,11 @@
 # Faster RCNN with PyTorch
 **Note:** I re-implemented faster rcnn in this project when I started learning PyTorch. Then I use PyTorch in all of my projects. I still remember it costed one week for me to figure out how to build cuda code as a pytorch layer :).
-But actually this is not a good implementation and I didn't achieve the same mIOU as the original caffe code. 
+But actually this is not a good implementation and I didn't achieve the same mAP as the original caffe code. 
 
-**This project is no longer maintained. So I suggest:**
+**This project is no longer maintained and may not compatible with the newest pytorch (after 0.4.0). So I suggest:**
 - You can still read and study this code if you want to re-implement faster rcnn by yourself;
-- You can use the better PyTorch implementation by [ruotianluo](https://github.com/ruotianluo/pytorch-faster-rcnn) if you want to train  faster rcnn with your own data;
+- You can use the better PyTorch implementation by [ruotianluo](https://github.com/ruotianluo/pytorch-faster-rcnn) 
+or [Detectron.pytorch](https://github.com/roytseng-tw/Detectron.pytorch) if you want to train  faster rcnn with your own data;
 
 This is a [PyTorch](https://github.com/pytorch/pytorch)
 implementation of Faster RCNN. 
