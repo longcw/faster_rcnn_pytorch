@@ -97,7 +97,7 @@ class RPN(nn.Module):
         rpn_bbox_targets = torch.mul(rpn_bbox_targets, rpn_bbox_inside_weights)
         rpn_bbox_pred = torch.mul(rpn_bbox_pred, rpn_bbox_inside_weights)
 
-        rpn_loss_box = F.smooth_l1_loss(rpn_bbox_pred, rpn_bbox_targets, size_average=False) / (fg_cnt + 1e-4)
+        rpn_loss_box = F.smooth_l1_loss(rpn_bbox_pred, rpn_bbox_targets, size_average=False) / (float(fg_cnt) + 1e-4)
 
         return rpn_cross_entropy, rpn_loss_box
 
@@ -259,7 +259,7 @@ class FasterRCNN(nn.Module):
         bbox_targets = torch.mul(bbox_targets, bbox_inside_weights)
         bbox_pred = torch.mul(bbox_pred, bbox_inside_weights)
 
-        loss_box = F.smooth_l1_loss(bbox_pred, bbox_targets, size_average=False) / (fg_cnt + 1e-4)
+        loss_box = F.smooth_l1_loss(bbox_pred, bbox_targets, size_average=False) / (float(fg_cnt) + 1e-4)
 
         return cross_entropy, loss_box
 

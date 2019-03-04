@@ -115,7 +115,7 @@ def clip_gradient(model, clip_norm):
             totalnorm += modulenorm ** 2
     totalnorm = np.sqrt(totalnorm)
 
-    norm = clip_norm / max(totalnorm, clip_norm)
+    norm = clip_norm / max(totalnorm, clip_norm).cuda()
     for p in model.parameters():
         if p.requires_grad:
             p.grad.mul_(norm)
