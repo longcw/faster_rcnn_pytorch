@@ -45,7 +45,7 @@ by Shaoqing Ren, Kaiming He, Ross Girshick, Jian Sun.
     cd faster_rcnn_pytorch/faster_rcnn
     ./make.sh
     ```
-3. Download the trained model [VGGnet_fast_rcnn_iter_70000.h5](https://drive.google.com/open?id=0B4pXCfnYmG1WOXdpYVFybWxiZFE) 
+3. Download the trained model [VGGnet_fast_rcnn_iter_70000.h5, updated](https://drive.google.com/file/d/0B4pXCfnYmG1WOXdpYVFybWxiZFE/view?usp=sharing&resourcekey=0-vQAoz7bipn_4rjvGhwoqlw) 
 and set the model path in `demo.py`
 3. Run demo `python demo.py`
 
